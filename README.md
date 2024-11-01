@@ -1,7 +1,7 @@
 # Cashier Web Service RestfulAPI
 
 ## Description
-Cashier Web Service RestfulAPI is an API that provides various endpoints for managing users, categories, payments, products, and orders. It supports authentication and authorization using bearer tokens.
+Cashier is an API that provides various endpoints for managing users, categories, payments, products, and orders. It supports authentication and authorization using bearer tokens.
 
 ## Features
 - Authentication
