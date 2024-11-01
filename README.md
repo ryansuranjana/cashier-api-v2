@@ -1,4 +1,4 @@
-# Cashier Web Service RestfulAPI
+# Cashier API V2
 
 ## Description
 Cashier is an API that provides various endpoints for managing users, categories, payments, products, and orders. It supports authentication and authorization using bearer tokens.
