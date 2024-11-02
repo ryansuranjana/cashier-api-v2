@@ -1,0 +1,15 @@
+{
+  "name": "cashier-api-v2",
+  "version": "1.0.0",
+  "description": "Cashier is an API that provides various endpoints for managing users, categories, payments, products, and orders. It supports authentication and authorization using bearer tokens.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.1",
+    "mysql": "^2.18.1"
+  }
+}
