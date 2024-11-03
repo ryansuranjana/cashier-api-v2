@@ -1,0 +1,27 @@
+{
+	"name": "cashier-api-v2",
+	"version": "1.0.0",
+	"description": "Cashier is an API that provides various endpoints for managing users, categories, payments, products, and orders. It supports authentication and authorization using bearer tokens.",
+	"main": "src/index.js",
+	"module": "module",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "npx nodemon src/index.ts"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+		"@types/express": "^5.0.0",
+		"@types/node": "^22.8.6",
+		"nodemon": "^3.1.7",
+		"prisma": "^5.21.1",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.6.3"
+	},
+	"dependencies": {
+		"@prisma/client": "^5.21.1",
+		"codemon": "^0.1.31-development",
+		"express": "^4.21.1"
+	}
+}
