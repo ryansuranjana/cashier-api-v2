@@ -354,10 +354,19 @@ app.get("/api/orders/:id", async (req, res) => {
 app.post("/api/orders", async (req, res) => {
 	try {
 		const data = req.body;
+
+		const productData = data.products.map((product: any) => {
+			return { productId: product.productId, quantity: product.quantity, totalPaid: product.totalPaid };
+		});
+
+		const totalPaidReduced: number = productData.reduce((a: number, b: any) => {
+			return a + b.totalPaid;
+		}, 0);
+
 		const order = await prisma.order.create({
 			data: {
 				paymentId: data.paymentId,
-				totalPaid: data.totalPaid,
+				totalPaid: totalPaidReduced,
 				orderProducts: {
 					createMany: {
 						data: data.products,
@@ -368,6 +377,7 @@ app.post("/api/orders", async (req, res) => {
 				orderProducts: true,
 			},
 		});
+
 		res.status(201).json(order);
 	} catch (e) {
 		console.log(e);
