@@ -1,9 +1,52 @@
 import express from "express";
-const app = express();
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
+const app = express();
 const prisma = new PrismaClient();
+const secretKey = process.env.SECRET_KEY;
 
 app.use(express.json());
+
+// LOGIN
+app.post("/api/login", async (req, res) => {
+	try {
+		const { username, password } = req.body;
+
+		// fetch user data from db
+		const getUserData = await prisma.user.findUnique({
+			where: {
+				username: username,
+			},
+		});
+
+		// check if user data exists and compare passwords
+		if (!getUserData || !(await bcrypt.compare(password, getUserData.password))) {
+			res.status(401).json({ message: "Invalid credentials!" });
+		}
+
+		let token;
+		if (secretKey) {
+			token = jwt.sign({ username }, secretKey, { expiresIn: "1h" });
+		} else {
+			res.status(401).json({ message: "Access denied. You are not authorized to make this request." });
+		}
+
+		// update user token
+		const updateUser = await prisma.user.update({
+			where: { username: username },
+			data: { token: token },
+		});
+
+		res.status(200).json(updateUser);
+	} catch (e) {
+		console.log(e);
+		res.status(500);
+	}
+});
+
+//LOGOUT
 
 // USER
 app.get("/api/users", async (req, res) => {
@@ -34,10 +77,14 @@ app.get("/api/users/:id", async (req, res) => {
 app.post("/api/users", async (req, res) => {
 	try {
 		const data = req.body;
+		const saltRounds = 10;
+		const salt = bcrypt.genSaltSync(saltRounds);
+		const hashedPassword = bcrypt.hashSync(data.password, salt);
+
 		const user = await prisma.user.create({
 			data: {
 				username: data.username,
-				password: data.password,
+				password: hashedPassword,
 				email: data.email,
 				role: data.role,
 			},
