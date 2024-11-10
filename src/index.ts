@@ -29,8 +29,6 @@ app.post("/api/login", async (req, res) => {
 		let token;
 		if (secretKey) {
 			token = jwt.sign({ username }, secretKey, { expiresIn: "1h" });
-		} else {
-			res.status(401).json({ message: "Access denied. You are not authorized to make this request." });
 		}
 
 		// update user token
@@ -47,6 +45,19 @@ app.post("/api/login", async (req, res) => {
 });
 
 //LOGOUT
+app.post("/api/logout", async (req, res) => {
+	try {
+		const { username } = req.body;
+		const updateUser = await prisma.user.update({
+			where: { username: username },
+			data: { token: null },
+		});
+		res.status(200).json(updateUser);
+	} catch (e) {
+		console.log(e);
+		res.status(500);
+	}
+});
 
 // USER
 app.get("/api/users", async (req, res) => {
