@@ -6,35 +6,40 @@ import jwt from "jsonwebtoken";
 const app = express();
 const prisma = new PrismaClient();
 const secretKey = process.env.SECRET_KEY;
+if (typeof secretKey !== "string" || !secretKey) {
+	throw new Error("Invalid or missing secret key.");
+}
 
 app.use(express.json());
+
+declare global {
+	namespace Express {
+		interface Request {
+			user?: any;
+		}
+	}
+}
 
 // LOGIN
 app.post("/api/login", async (req, res) => {
 	try {
 		const { username, password } = req.body;
 
-		// fetch user data from db
 		const getUserData = await prisma.user.findUnique({
 			where: {
 				username: username,
 			},
 		});
 
-		// check if user data exists and compare passwords
 		if (!getUserData || !(await bcrypt.compare(password, getUserData.password))) {
 			res.status(401).json({ message: "Invalid credentials!" });
 		}
 
-		let token;
-		if (secretKey) {
-			token = jwt.sign({ username }, secretKey, { expiresIn: "1h" });
-		}
+		let accessToken = jwt.sign({ username: username, role: getUserData?.role }, secretKey);
 
-		// update user token
 		const updateUser = await prisma.user.update({
 			where: { username: username },
-			data: { token: token },
+			data: { token: accessToken },
 		});
 
 		res.status(200).json(updateUser);
@@ -44,10 +49,33 @@ app.post("/api/login", async (req, res) => {
 	}
 });
 
-//LOGOUT
+// MIDDLEWARE FOR TOKEN VERIFICATION
+app.use((req, res, next) => {
+	try {
+		const authHeader = req.get("Authorization");
+		const token = authHeader?.split(" ")[1];
+
+		if (token) {
+			jwt.verify(token, secretKey, (err, user: any) => {
+				if (err) {
+					res.status(403).json({ message: "Unauthorized: Invalid token" });
+				}
+				req.user = user;
+				next();
+			});
+		} else {
+			res.status(403).json({ message: "Unauthorized: No token provided" });
+		}
+	} catch (e) {
+		console.log(e);
+		res.status(500);
+	}
+});
+
+// LOGOUT
 app.post("/api/logout", async (req, res) => {
 	try {
-		const { username } = req.body;
+		const username = req.user.username;
 		const updateUser = await prisma.user.update({
 			where: { username: username },
 			data: { token: null },
@@ -56,6 +84,86 @@ app.post("/api/logout", async (req, res) => {
 	} catch (e) {
 		console.log(e);
 		res.status(500);
+	}
+});
+
+// LIST PRODUCTS
+app.get("/api/products", async (req, res) => {
+	try {
+		const product = await prisma.product.findMany();
+		res.status(200).json(product);
+	} catch (e) {
+		console.log(e);
+		res.status(500);
+	}
+});
+
+// ORDER MANAGEMENT API
+app.get("/api/orders", async (req, res) => {
+	try {
+		const order = await prisma.order.findMany();
+		res.status(200).json(order);
+	} catch (e) {
+		console.log(e);
+		res.status(500);
+	}
+});
+
+app.get("/api/orders/:id", async (req, res) => {
+	try {
+		const id = parseInt(req.params.id);
+		const order = await prisma.order.findUnique({
+			where: {
+				id: id,
+			},
+		});
+		res.status(200).json(order);
+	} catch (e) {
+		console.log(e);
+		res.status(500);
+	}
+});
+
+app.post("/api/orders", async (req, res) => {
+	try {
+		const data = req.body;
+
+		const productData = data.products.map((product: any) => {
+			return { productId: product.productId, quantity: product.quantity, totalPaid: product.totalPaid };
+		});
+
+		const totalPaidReduced: number = productData.reduce((a: number, b: any) => {
+			return a + b.totalPaid;
+		}, 0);
+
+		const order = await prisma.order.create({
+			data: {
+				paymentId: data.paymentId,
+				totalPaid: totalPaidReduced,
+				orderProducts: {
+					createMany: {
+						data: data.products,
+					},
+				},
+			},
+			include: {
+				orderProducts: true,
+			},
+		});
+
+		res.status(201).json(order);
+	} catch (e) {
+		console.log(e);
+		res.status(500);
+	}
+});
+
+// MIDDLEWARE FOR ADMIN ROLE
+app.use((req, res, next) => {
+	if (req.user.role === "admin") {
+		next();
+	} else {
+		res.status(403).json({ message: "Unauthorized: Not an admin" });
 	}
 });
 
@@ -298,17 +406,7 @@ app.delete("/api/categories/:id", async (req, res) => {
 	}
 });
 
-//PRODUCT
-app.get("/api/products", async (req, res) => {
-	try {
-		const product = await prisma.product.findMany();
-		res.status(200).json(product);
-	} catch (e) {
-		console.log(e);
-		res.status(500);
-	}
-});
-
+//PRODUCT API
 app.get("/api/products/:id", async (req, res) => {
 	try {
 		const id = parseInt(req.params.id);
@@ -377,66 +475,6 @@ app.delete("/api/products/:id", async (req, res) => {
 			},
 		});
 		res.status(200).json(deleteProduct);
-	} catch (e) {
-		console.log(e);
-		res.status(500);
-	}
-});
-
-// ORDER
-app.get("/api/orders", async (req, res) => {
-	try {
-		const order = await prisma.order.findMany();
-		res.status(200).json(order);
-	} catch (e) {
-		console.log(e);
-		res.status(500);
-	}
-});
-
-app.get("/api/orders/:id", async (req, res) => {
-	try {
-		const id = parseInt(req.params.id);
-		const order = await prisma.order.findUnique({
-			where: {
-				id: id,
-			},
-		});
-		res.status(200).json(order);
-	} catch (e) {
-		console.log(e);
-		res.status(500);
-	}
-});
-
-app.post("/api/orders", async (req, res) => {
-	try {
-		const data = req.body;
-
-		const productData = data.products.map((product: any) => {
-			return { productId: product.productId, quantity: product.quantity, totalPaid: product.totalPaid };
-		});
-
-		const totalPaidReduced: number = productData.reduce((a: number, b: any) => {
-			return a + b.totalPaid;
-		}, 0);
-
-		const order = await prisma.order.create({
-			data: {
-				paymentId: data.paymentId,
-				totalPaid: totalPaidReduced,
-				orderProducts: {
-					createMany: {
-						data: data.products,
-					},
-				},
-			},
-			include: {
-				orderProducts: true,
-			},
-		});
-
-		res.status(201).json(order);
 	} catch (e) {
 		console.log(e);
 		res.status(500);
