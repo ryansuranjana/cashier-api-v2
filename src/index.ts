@@ -2,6 +2,7 @@ import express from "express";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { createBrotliCompress } from "zlib";
 
 const app = express();
 const prisma = new PrismaClient();
@@ -35,14 +36,35 @@ app.post("/api/login", async (req, res) => {
 			res.status(401).json({ message: "Invalid credentials!" });
 		}
 
-		let accessToken = jwt.sign({ username: username, role: getUserData?.role }, secretKey);
+		const accessToken = jwt.sign({ username: username, role: getUserData?.role }, secretKey);
+		const refreshToken = jwt.sign({ username: username, role: getUserData?.role }, secretKey);
 
 		const updateUser = await prisma.user.update({
 			where: { username: username },
 			data: { token: accessToken },
 		});
 
-		res.status(200).json(updateUser);
+		res.status(200).cookie("refreshToken", refreshToken, { httpOnly: true, sameSite: "strict" }).json(updateUser);
+	} catch (e) {
+		console.log(e);
+		res.status(500);
+	}
+});
+
+app.post("/refresh", async (req, res) => {
+	try {
+		const refreshToken = req.cookies["refreshToken"];
+		if (!refreshToken) {
+			res.status(403).json({ message: "Unauthorized: No refresh token provided" });
+		}
+
+		jwt.verify(refreshToken, secretKey, (err: any, user: any) => {
+			if (err) {
+				res.status(403).json({ message: "Unauthorized: Invalid token" });
+			}
+			const accessToken = jwt.sign({ username: user.username, role: user.role }, secretKey);
+			res.status(200).json({ accessToken: accessToken });
+		});
 	} catch (e) {
 		console.log(e);
 		res.status(500);
@@ -53,12 +75,27 @@ app.post("/api/login", async (req, res) => {
 app.use((req, res, next) => {
 	try {
 		const authHeader = req.get("Authorization");
-		const token = authHeader?.split(" ")[1];
+		const accessToken = authHeader?.split(" ")[1] as string;
+		const refreshToken = req.cookies["refreshToken"];
 
-		if (token) {
-			jwt.verify(token, secretKey, (err, user: any) => {
+		if (accessToken) {
+			jwt.verify(accessToken, secretKey, (err, user: any) => {
 				if (err) {
 					res.status(403).json({ message: "Unauthorized: Invalid token" });
+					// if (refreshToken) {
+					// 	jwt.verify(refreshToken, secretKey, (err: any, user: any) => {
+					// 		if (err) {
+					// 			res.status(403).json({ message: "Unauthorized: Invalid token" });
+					// 		}
+					// 		const accessToken = jwt.sign({ username: user.username, role: user.role }, secretKey);
+					// 		res
+					// 			.status(200)
+					// 			.cookie("refreshToken", refreshToken, { httpOnly: true, sameSite: "strict" })
+					// 			.json({ accessToken: accessToken });
+					// 	});
+					// } else {
+					// 	res.status(401).send("Access Denied. No refresh token provided.");
+					// }
 				}
 				req.user = user;
 				next();
