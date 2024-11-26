@@ -1,14 +1,14 @@
 import express from "express";
 import authMiddleware from "../middlewares/auth.middleware";
-import { loginUser, refreshAccessToken, logoutUser } from "../controller/auth.controller";
+import authController from "../controller/auth.controller";
 
 const authRouter = express.Router();
 
-authRouter.post("/api/login", loginUser);
-authRouter.post("/api/refresh", refreshAccessToken);
+authRouter.post("/login", authController.loginUser);
+authRouter.post("/refresh", authController.refreshAccessToken);
 
 authRouter.use(authMiddleware);
 
-authRouter.post("/api/logout", logoutUser);
+authRouter.post("/logout", authController.logoutUser);
 
 export default authRouter;

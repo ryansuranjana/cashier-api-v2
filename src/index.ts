@@ -23,13 +23,13 @@ export const prisma = new PrismaClient();
 app.use(express.json());
 app.use(cookieParser());
 
-app.use(authRouter);
-app.use(orderRouter);
+app.use("/api", authRouter);
+app.use("/api/orders", orderRouter);
 // ROLE: ADMIN except for GET PRODUCTS
-app.use(userRouter);
-app.use(paymentRouter);
-app.use(categoryRouter);
-app.use(productRouter);
+app.use("/api/users", userRouter);
+app.use("/api/payments", paymentRouter);
+app.use("/api/categories", categoryRouter);
+app.use("/api/products", productRouter);
 
 app.listen(port, () => {
 	console.log("Listening to port " + port);

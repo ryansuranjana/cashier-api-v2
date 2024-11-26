@@ -1,13 +1,13 @@
 import express from "express";
 import authMiddleware from "../middlewares/auth.middleware";
-import { createOrder, getOrderById, getOrders } from "../controller/order.controller";
+import orderController from "../controller/order.controller";
 
 const orderRouter = express.Router();
 
 orderRouter.use(authMiddleware);
 
-orderRouter.get("/api/orders", getOrders);
-orderRouter.get("/api/orders/:id", getOrderById);
-orderRouter.post("/api/orders", createOrder);
+orderRouter.get("/", orderController.getOrders);
+orderRouter.get("/:id", orderController.getOrderById);
+orderRouter.post("/", orderController.createOrder);
 
 export default orderRouter;
