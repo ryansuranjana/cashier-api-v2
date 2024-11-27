@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import { prisma } from "../index";
+import productService from "../services/product.service";
 
 const getProducts = async (req: Request, res: Response) => {
 	try {
-		const product = await prisma.product.findMany();
+		const product = await productService.getProducts();
 		res.status(200).json(product);
 	} catch (e) {
 		console.log(e);
@@ -14,11 +14,7 @@ const getProducts = async (req: Request, res: Response) => {
 const getProductById = async (req: Request, res: Response) => {
 	try {
 		const id = parseInt(req.params.id);
-		const product = await prisma.product.findUnique({
-			where: {
-				id: id,
-			},
-		});
+		const product = await productService.getProductById(id);
 		res.status(200).json(product);
 	} catch (e) {
 		console.log(e);
@@ -29,16 +25,7 @@ const getProductById = async (req: Request, res: Response) => {
 const createProduct = async (req: Request, res: Response) => {
 	try {
 		const data = req.body;
-		const product = await prisma.product.create({
-			data: {
-				name: data.name,
-				categoryId: data.categoryId,
-				price: data.price,
-				stock: data.stock,
-				sku: data.sku,
-				image: data.image,
-			},
-		});
+		const product = await productService.createProduct(data);
 		res.status(201).json(product);
 	} catch (e) {
 		console.log(e);
@@ -50,19 +37,7 @@ const updateProduct = async (req: Request, res: Response) => {
 	try {
 		const id = parseInt(req.params.id);
 		const data = req.body;
-		const updateProduct = await prisma.product.update({
-			where: {
-				id: id,
-			},
-			data: {
-				name: data.name,
-				categoryId: data.categoryId,
-				price: data.price,
-				stock: data.stock,
-				sku: data.sku,
-				image: data.image,
-			},
-		});
+		const updateProduct = await productService.updateProduct(id, data);
 		res.status(200).json(updateProduct);
 	} catch (e) {
 		console.log(e);
@@ -73,11 +48,7 @@ const updateProduct = async (req: Request, res: Response) => {
 const deleteProduct = async (req: Request, res: Response) => {
 	try {
 		const id = parseInt(req.params.id);
-		const deleteProduct = await prisma.product.delete({
-			where: {
-				id: id,
-			},
-		});
+		const deleteProduct = await productService.deleteProduct(id);
 		res.status(200).json(deleteProduct);
 	} catch (e) {
 		console.log(e);
@@ -85,4 +56,4 @@ const deleteProduct = async (req: Request, res: Response) => {
 	}
 };
 
-export { getProducts, getProductById, createProduct, updateProduct, deleteProduct };
+export default { getProducts, getProductById, createProduct, updateProduct, deleteProduct };

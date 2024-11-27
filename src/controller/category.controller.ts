@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import { prisma } from "../index";
+import categoryService from "../services/category.service";
 
 const getCategories = async (req: Request, res: Response) => {
 	try {
-		const category = await prisma.category.findMany();
+		const category = await categoryService.getCategories();
 		res.status(200).json(category);
 	} catch (e) {
 		console.log(e);
@@ -14,11 +14,7 @@ const getCategories = async (req: Request, res: Response) => {
 const getCategoryById = async (req: Request, res: Response) => {
 	try {
 		const id = parseInt(req.params.id);
-		const category = await prisma.category.findUnique({
-			where: {
-				id: id,
-			},
-		});
+		const category = await categoryService.getCategoryById(id);
 		res.status(200).json(category);
 	} catch (e) {
 		console.log(e);
@@ -29,11 +25,7 @@ const getCategoryById = async (req: Request, res: Response) => {
 const createCategory = async (req: Request, res: Response) => {
 	try {
 		const data = req.body;
-		const category = await prisma.category.create({
-			data: {
-				name: data.name,
-			},
-		});
+		const category = await categoryService.createCategory(data);
 		res.status(201).json(category);
 	} catch (e) {
 		console.log(e);
@@ -45,15 +37,8 @@ const updateCategory = async (req: Request, res: Response) => {
 	try {
 		const id = parseInt(req.params.id);
 		const data = req.body;
-		const updateCategory = await prisma.category.update({
-			where: {
-				id: id,
-			},
-			data: {
-				name: data.name,
-			},
-		});
-		res.status(200).json(updateCategory);
+		const updatedCategory = await categoryService.updateCategory(id, data);
+		res.status(200).json(updatedCategory);
 	} catch (e) {
 		console.log(e);
 		res.status(500);
@@ -63,16 +48,12 @@ const updateCategory = async (req: Request, res: Response) => {
 const deleteCategory = async (req: Request, res: Response) => {
 	try {
 		const id = parseInt(req.params.id);
-		const deleteCategory = await prisma.category.delete({
-			where: {
-				id: id,
-			},
-		});
-		res.status(200).json(deleteCategory);
+		const deletedCategory = await categoryService.deleteCategory(id);
+		res.status(200).json(deletedCategory);
 	} catch (e) {
 		console.log(e);
 		res.status(500);
 	}
 };
 
-export { getCategories, getCategoryById, createCategory, updateCategory, deleteCategory };
+export default { getCategories, getCategoryById, createCategory, updateCategory, deleteCategory };
