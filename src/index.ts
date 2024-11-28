@@ -7,6 +7,7 @@ import userRouter from "./routes/user.router";
 import paymentRouter from "./routes/payment.router";
 import categoryRouter from "./routes/category.router";
 import productRouter from "./routes/product.router";
+import errorMiddleware from "./middlewares/error.middleware";
 
 declare global {
 	namespace Express {
@@ -30,6 +31,7 @@ app.use("/api/users", userRouter);
 app.use("/api/payments", paymentRouter);
 app.use("/api/categories", categoryRouter);
 app.use("/api/products", productRouter);
+app.use(errorMiddleware);
 
 app.listen(port, () => {
 	console.log("Listening to port " + port);

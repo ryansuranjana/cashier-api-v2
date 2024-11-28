@@ -1,59 +1,54 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import userService from "../services/user.service";
 
-const getUsers = async (req: Request, res: Response) => {
+const getUsers = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const users = await userService.getUsers();
 		res.status(200).json(users);
 	} catch (e) {
-		console.log(e);
-		res.status(500);
+		next(e);
 	}
 };
 
-const getUserById = async (req: Request, res: Response) => {
+const getUserById = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const id = parseInt(req.params.id);
 		const user = await userService.getUserById(id);
 		res.status(200).json(user);
 	} catch (e) {
-		console.log(e);
-		res.status(500);
+		next(e);
 	}
 };
 
-const createUser = async (req: Request, res: Response) => {
+const createUser = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const data = req.body;
 		const user = await userService.createUser(data);
 
 		res.status(201).json(user);
 	} catch (e) {
-		console.log(e);
-		res.status(500);
+		next(e);
 	}
 };
 
-const updateUser = async (req: Request, res: Response) => {
+const updateUser = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const id = parseInt(req.params.id);
 		const data = req.body;
 		const updateUser = await userService.updateUser(id, data);
 		res.status(200).json(updateUser);
 	} catch (e) {
-		console.log(e);
-		res.status(500);
+		next(e);
 	}
 };
 
-const deleteUser = async (req: Request, res: Response) => {
+const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const id = parseInt(req.params.id);
 		const deleteUser = await userService.deleteUser(id);
 		res.status(200).json(deleteUser);
 	} catch (e) {
-		console.log(e);
-		res.status(500);
+		next(e);
 	}
 };
 

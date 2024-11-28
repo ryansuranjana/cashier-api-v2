@@ -1,11 +1,11 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import authService from "../services/auth.service";
 
 const secretKey = process.env.SECRET_KEY as string;
 
-const loginUser = async (req: Request, res: Response) => {
+const loginUser = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { username, password } = req.body;
 
@@ -22,12 +22,11 @@ const loginUser = async (req: Request, res: Response) => {
 
 		res.status(200).cookie("refreshToken", refreshToken, { httpOnly: true, sameSite: "strict" }).json(updateUser);
 	} catch (e) {
-		console.log(e);
-		res.status(500);
+		next(e);
 	}
 };
 
-const refreshAccessToken = async (req: Request, res: Response) => {
+const refreshAccessToken = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const refreshToken = req.cookies["refreshToken"];
 		if (!refreshToken) {
@@ -39,19 +38,17 @@ const refreshAccessToken = async (req: Request, res: Response) => {
 
 		res.status(200).json({ accessToken: accessToken });
 	} catch (e) {
-		console.log(e);
-		res.status(500);
+		next(e);
 	}
 };
 
-const logoutUser = async (req: Request, res: Response) => {
+const logoutUser = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const username = req.user.username;
 		const updateUser = await authService.updateAccessToken(username, null);
 		res.status(200).json(updateUser);
 	} catch (e) {
-		console.log(e);
-		res.status(500);
+		next(e);
 	}
 };
 

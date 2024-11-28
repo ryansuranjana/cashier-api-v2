@@ -1,28 +1,26 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import orderService from "../services/order.service";
 
-const getOrders = async (req: Request, res: Response) => {
+const getOrders = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const order = await orderService.getOrders();
 		res.status(200).json(order);
 	} catch (e) {
-		console.log(e);
-		res.status(500);
+		next(e);
 	}
 };
 
-const getOrderById = async (req: Request, res: Response) => {
+const getOrderById = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const id = parseInt(req.params.id);
 		const order = await orderService.getOrderById(id);
 		res.status(200).json(order);
 	} catch (e) {
-		console.log(e);
-		res.status(500);
+		next(e);
 	}
 };
 
-const createOrder = async (req: Request, res: Response) => {
+const createOrder = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const data = req.body;
 
@@ -31,8 +29,7 @@ const createOrder = async (req: Request, res: Response) => {
 
 		res.status(201).json(order);
 	} catch (e) {
-		console.log(e);
-		res.status(500);
+		next(e);
 	}
 };
 
