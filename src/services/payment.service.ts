@@ -1,4 +1,7 @@
+import { ResponseError } from "../error/response.error";
 import { prisma } from "../index";
+import paymentValidation from "../validation/payment.validation";
+import { validate } from "../validation/validation";
 
 const getPayments = async () => {
 	const payments = await prisma.payment.findMany();
@@ -15,25 +18,49 @@ const getPaymentById = async (paymentId: number) => {
 };
 
 const createPayment = async (data: any) => {
+	const validatedData = validate(paymentValidation.createPaymentSchema, data);
+
+	const paymentExists = await prisma.payment.findFirst({
+		where: {
+			name: validatedData.name,
+		},
+	});
+
+	if (paymentExists) {
+		throw new ResponseError(400, "Payment already exists");
+	}
+
 	const payment = await prisma.payment.create({
 		data: {
-			name: data.name,
-			type: data.type,
-			logo: data.logo,
+			name: validatedData.name,
+			type: validatedData.type,
+			logo: validatedData.logo,
 		},
 	});
 	return payment;
 };
 
 const updatePayment = async (paymentId: number, data: any) => {
+	const validatedData = validate(paymentValidation.updatePaymentSchema, data);
+
+	const paymentExists = await prisma.payment.findFirst({
+		where: {
+			name: validatedData.name,
+		},
+	});
+
+	if (paymentExists) {
+		throw new ResponseError(400, "Payment already exists");
+	}
+
 	const updatedPayment = await prisma.payment.update({
 		where: {
 			id: paymentId,
 		},
 		data: {
-			name: data.name,
-			type: data.type,
-			logo: data.logo,
+			name: validatedData.name,
+			type: validatedData.type,
+			logo: validatedData.logo,
 		},
 	});
 	return updatedPayment;

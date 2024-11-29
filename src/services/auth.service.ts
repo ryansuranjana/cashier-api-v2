@@ -1,33 +1,50 @@
 import { prisma } from "../index";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import { ResponseError } from "../error/response.error";
+import { validate } from "../validation/validation";
+import authValidation from "../validation/auth.validation";
 
 const secretKey = process.env.SECRET_KEY as string;
 
-const getUserData = async (username: string) => {
-	const user = await prisma.user.findUnique({
+const getUserData = async (data: any) => {
+	const validatedData = validate(authValidation.getUserDataSchema, data);
+	const userData = await prisma.user.findUnique({
 		where: {
-			username: username,
+			email: validatedData.email,
 		},
 	});
-	return user;
+
+	if (!userData || !(await bcrypt.compare(validatedData.password, userData.password))) {
+		throw new ResponseError(401, "Unauthorized: Invalid credentials!");
+	}
+
+	return userData;
 };
 
 const verifyRefreshToken = (refreshToken: string): Promise<any> =>
 	new Promise((resolve, reject) => {
+		if (!refreshToken) {
+			return reject(new ResponseError(401, "Unauthorized: No refresh token provided"));
+		}
+
 		jwt.verify(refreshToken, secretKey, (err: any, decoded: any) => {
-			if (err) return reject(new Error("Unauthorized: Invalid token"));
+			if (err) return reject(new ResponseError(401, "Unauthorized: Invalid token"));
 			resolve(decoded);
 		});
 	});
 
-const generateAccessToken = (user: any): string => jwt.sign({ username: user.username, role: user.role }, secretKey);
+const generateAccessToken = (user: any): string => jwt.sign({ email: user.email, role: user.role }, secretKey, { expiresIn: "15m" });
 
-const updateAccessToken = async (username: string, accessToken: string | null) => {
+const generateRefreshToken = (user: any): string => jwt.sign({ email: user.email, role: user.role }, secretKey, { expiresIn: "17d" });
+
+const updateAccessToken = async (email: string, accessToken: string | null) => {
+	const validatedData = validate(authValidation.updateUserDataSchema, email);
 	const updatedUser = await prisma.user.update({
-		where: { username: username },
+		where: { email: validatedData.email },
 		data: { token: accessToken },
 	});
 	return updatedUser;
 };
 
-export default { getUserData, verifyRefreshToken, generateAccessToken, updateAccessToken };
+export default { getUserData, verifyRefreshToken, generateAccessToken, generateRefreshToken, updateAccessToken };

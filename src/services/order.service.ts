@@ -1,4 +1,6 @@
 import { prisma } from "../index";
+import { validate } from "../validation/validation";
+import orderValidation from "../validation/order.validation";
 
 const getOrders = async () => {
 	const orders = await prisma.order.findMany();
@@ -15,7 +17,8 @@ const getOrderById = async (id: number) => {
 };
 
 const calculateTotalPaid = (products: any) => {
-	const productData = products.map((product: any) => {
+	const validatedData = validate(orderValidation.productsSchema, products);
+	const productData = validatedData.map((product: any) => {
 		return { productId: product.productId, quantity: product.quantity, totalPaid: product.totalPaid };
 	});
 
@@ -27,13 +30,14 @@ const calculateTotalPaid = (products: any) => {
 };
 
 const createOrder = async (data: any, totalPaidReduced: number) => {
+	const validatedData = validate(orderValidation.orderSchema, data);
 	const order = await prisma.order.create({
 		data: {
-			paymentId: data.paymentId,
+			paymentId: validatedData.paymentId,
 			totalPaid: totalPaidReduced,
 			orderProducts: {
 				createMany: {
-					data: data.products,
+					data: validatedData.products,
 				},
 			},
 		},
