@@ -7,20 +7,15 @@ const secretKey = process.env.SECRET_KEY as string;
 
 const loginUser = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const { username, password } = req.body;
+		const data = req.body;
+		const getUserData = await authService.getUserData(data);
 
-		const getUserData = await authService.getUserData(username);
+		const accessToken = authService.generateAccessToken(getUserData);
+		const refreshToken = authService.generateRefreshToken(getUserData);
 
-		if (!getUserData || !(await bcrypt.compare(password, getUserData.password))) {
-			res.status(401).json({ message: "Invalid credentials!" });
-		}
+		const updatedUser = await authService.updateAccessToken(data.email, accessToken);
 
-		const accessToken = jwt.sign({ username: username, role: getUserData?.role }, secretKey);
-		const refreshToken = jwt.sign({ username: username, role: getUserData?.role }, secretKey);
-
-		const updateUser = await authService.updateAccessToken(username, accessToken);
-
-		res.status(200).cookie("refreshToken", refreshToken, { httpOnly: true, sameSite: "strict" }).json(updateUser);
+		res.status(200).cookie("refreshToken", refreshToken, { httpOnly: true, sameSite: "strict" }).json(updatedUser);
 	} catch (e) {
 		next(e);
 	}
@@ -29,10 +24,6 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
 const refreshAccessToken = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const refreshToken = req.cookies["refreshToken"];
-		if (!refreshToken) {
-			res.status(403).json({ message: "Unauthorized: No refresh token provided" });
-		}
-
 		const verifyRefreshToken = await authService.verifyRefreshToken(refreshToken);
 		const accessToken = authService.generateAccessToken(verifyRefreshToken);
 
@@ -44,9 +35,9 @@ const refreshAccessToken = async (req: Request, res: Response, next: NextFunctio
 
 const logoutUser = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const username = req.user.username;
-		const updateUser = await authService.updateAccessToken(username, null);
-		res.status(200).json(updateUser);
+		const email = req.user.email;
+		const updatedUser = await authService.updateAccessToken(email, null);
+		res.status(200).json(updatedUser);
 	} catch (e) {
 		next(e);
 	}
